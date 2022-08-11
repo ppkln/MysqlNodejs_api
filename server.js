@@ -24,11 +24,11 @@ connection.connect((err)=>{
 
 // add user to mysql
 app.post("/create",(req,res)=>{
-    const {email,name,password} =req.body;
+    const {email,name,password,codeEtc} =req.body;
     try{
         console.log("อยู่ใน post(/create) แล้ว");
         console.log("ค่าของ req.body.email = "+req.body.email);
-        connection.query("INSERT INTO users(email,fullname,password) VALUES(?,?,?)",[email,name,password]),(err,result,fields)=>{
+        connection.query("INSERT INTO users(email,fullname,password,codeEtc) VALUES(?,?,?,?)",[email,name,password,codeEtc]),(err,result,fields)=>{
             if(err){
                 console.log("Error while insert user to MySQL.")
                 res.status(400).send();
@@ -58,7 +58,7 @@ app.get("/read",(req,res)=>{
         return res.status(500).send();
     }
 })
-// read by officeID
+// read user data by inner join
 app.get("/readbydepart",(req,res)=>{
     const officeID= req.params.offID;
     try{
@@ -82,6 +82,7 @@ app.patch("/update/:id",async (req,res)=>{
     const newPassword = req.body.password;
     try{
         if(name && newPassword){
+            console.log("ค่า name และ newPassword ที่ต้องการอัพเดต :"+name+newPassword);
             connection.query("UPDATE users SET fullname =?, password=? WHERE id=?",[name,newPassword,id],(err,result,fields)=>{
                 if(err){
                     console.log("Error to upadte user's data (condition1) : "+err);
@@ -92,7 +93,8 @@ app.patch("/update/:id",async (req,res)=>{
                 })
             });
         } else if(name && !newPassword){
-            connection.query("UPDATE users SET name =? WHERE id=?",[name,id],(err,result,fields)=>{
+            console.log("ค่า name  ที่ต้องการอัพเดต :"+name);
+            connection.query("UPDATE users SET fullname =? WHERE id=?",[name,id],(err,result,fields)=>{
                 if(err){
                     console.log("Error to upadte user's data (condition2) : "+err);
                     return res.status(400).send();
@@ -102,6 +104,7 @@ app.patch("/update/:id",async (req,res)=>{
                 })
             });
         }  else if(!name && newPassword) {
+            console.log("ค่า newPassword ที่ต้องการอัพเดต :"+newPassword);
             connection.query("UPDATE users SET password =? WHERE id=?",[newPassword,id],(err,result,fields)=>{
                 if(err){
                     console.log("Error to update user's data (condition3) : "+err);
@@ -121,6 +124,31 @@ app.patch("/update/:id",async (req,res)=>{
     }
 
 })
+// delete user by userID
+app.delete("/delete/:userid",(req,res)=>{
+    const id = req.params.userid;
+    try{
+        if(id){
+            console.log("ค่า userID ที่ต้องการลบ :"+id);
+            connection.query("DELETE FROM users WHERE id=?",[id],(err,results,fields)=>{
+                if(err){
+                    console.log("Error while delete user from MySQL.")
+                    res.status(400).send();
+                }
+                if(results.affectedRows === 0){
+                    res.status(404).json({message:"No userID for delete data"});
+                }
+                res.status(200).json({message:"User deleted successfully"});
+            })
+        } else{
+            console.log("Please enter user'id for delete data")
+                return res.status(400).send()
+        }
+    } catch(err){
+
+    }
+});
+
 
 app.listen(3000,()=>{
     console.log("Server is runnign on port 8889.")
